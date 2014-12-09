@@ -1,0 +1,9 @@
+{
+  "example_string": "string value",
+  "example_array": [
+    "array value 0"
+  ],
+  "example_object": {
+    "example_number": 5.3
+  }
+}

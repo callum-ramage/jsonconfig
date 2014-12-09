@@ -1,0 +1,14 @@
+{
+  //comments
+  "test_string": "string value",//all
+  //over "test_default": "doesn't work"
+//the
+  "pl//ace": "valid json",
+  "test_array": [
+    "array value 0"
+  ],
+  "test_object": {
+    "test_number": 5.3,
+    "test_string": "wont be over written"
+  }
+}
