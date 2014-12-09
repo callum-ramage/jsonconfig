@@ -49,4 +49,4 @@ Where `./ExampleConfig.json` is
 		}
 	}
 
-For a more detailed example that includes defining default values, have a look at [jsonconfig_test.go](github.com/callum-ramage/jsonconfig/blob/master/jsonconfig_test.go)
+For a more detailed example that includes defining default values, have a look at [jsonconfig_test.go](jsonconfig_test.go)
