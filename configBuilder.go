@@ -14,6 +14,7 @@ type JSONValue struct{
   Str string
   Int int
   Num float64
+  Bool bool
   Obj map[string]JSONValue
 }
 
@@ -25,6 +26,7 @@ func NewJSONValue(value interface{}) JSONValue {
   outputValue.Str = outputValue.String()
   outputValue.Num = outputValue.Number()
   outputValue.Int = outputValue.Integer()
+  outputValue.Bool = outputValue.Boolean()
   outputValue.Obj = outputValue.Object()
   return outputValue
 }
@@ -71,6 +73,16 @@ func (key JSONValue) Number() float64 {
       return typedValue
     default:
       return 0
+  }
+}
+
+//Checks if the type of the json value is a bool and if appropriate, casts it into a bool.
+func (key JSONValue) Boolean() bool {
+  switch typedValue := key.value.(type) {
+    case bool:
+      return typedValue
+    default:
+      return false
   }
 }
 

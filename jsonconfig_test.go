@@ -68,6 +68,11 @@ func TestLoadAbstract(test *testing.T) {
     test.Error()
   }
 
+  if !config["test_bool"].Bool {
+    fmt.Println(config["test_bool"].Bool)
+    test.Error()
+  }
+
   if config["test_default"].Str != "works" {
     fmt.Println(config["test_default"].Str)
     test.Error()

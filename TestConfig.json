@@ -10,5 +10,6 @@
   "test_object": {
     "test_number": 5.3,
     "test_string": "wont be over written"
-  }
+  },
+  "test_bool": true
 }
