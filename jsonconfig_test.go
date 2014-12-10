@@ -43,7 +43,8 @@ func TestLoadAbstract(test *testing.T) {
     test.Error()
   }
 
-  if config["test_object"].Obj["test_number"].Num != float64(5.3) {
+  // if config["test_object"].Obj["test_number"].Num != float64(5.3) {
+  if config["test_object"].Obj["test_number"].Num != 5.3 {
     fmt.Println(config["test_object"].Obj["test_number"].Num)
     test.Error()
   }
