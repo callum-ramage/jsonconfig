@@ -9,7 +9,7 @@ import (
 //Is a convenience struct that makes working with abstract JSON data more tolerable.
 //The internal values Arr and Obj can be nil, so should not be assumed to be safe.
 type JSONValue struct{
-  value interface{}
+  Value interface{}
   Arr []JSONValue
   Str string
   Int int
@@ -21,7 +21,7 @@ type JSONValue struct{
 //Creates a JSONValue from the interface provided. It attempts to fill the values Arr, Str, Int, Num, and Obj
 //by checking against the type of the value provided.
 func NewJSONValue(value interface{}) JSONValue {
-  outputValue := JSONValue{value: value}
+  outputValue := JSONValue{Value: value}
   outputValue.Arr = outputValue.Array()
   outputValue.Str = outputValue.String()
   outputValue.Num = outputValue.Number()
@@ -34,7 +34,7 @@ func NewJSONValue(value interface{}) JSONValue {
 //Checks if the type of the json value is an array and if appropriate, casts it into
 //an array of JSONValue.
 func (key JSONValue) Array() []JSONValue {
-  switch typedValue := key.value.(type) {
+  switch typedValue := key.Value.(type) {
     case []interface{}:
       typedArray := make([]JSONValue, len(typedValue))
       for i := range typedValue {
@@ -48,7 +48,7 @@ func (key JSONValue) Array() []JSONValue {
 
 //Checks if the type of the json value is a string and if appropriate, casts it into a string.
 func (key JSONValue) String() string {
-  switch typedValue := key.value.(type) {
+  switch typedValue := key.Value.(type) {
     case string:
       return typedValue
     default:
@@ -58,7 +58,7 @@ func (key JSONValue) String() string {
 
 //Checks if the type of the json value is a float64 and if appropriate, casts it into an int.
 func (key JSONValue) Integer() int {
-  switch typedValue := key.value.(type) {
+  switch typedValue := key.Value.(type) {
     case float64:
       return int(typedValue)
     default:
@@ -68,7 +68,7 @@ func (key JSONValue) Integer() int {
 
 //Checks if the type of the json value is a float64 and if appropriate, casts it into a float64.
 func (key JSONValue) Number() float64 {
-  switch typedValue := key.value.(type) {
+  switch typedValue := key.Value.(type) {
     case float64:
       return typedValue
     default:
@@ -78,7 +78,7 @@ func (key JSONValue) Number() float64 {
 
 //Checks if the type of the json value is a bool and if appropriate, casts it into a bool.
 func (key JSONValue) Boolean() bool {
-  switch typedValue := key.value.(type) {
+  switch typedValue := key.Value.(type) {
     case bool:
       return typedValue
     default:
@@ -88,7 +88,7 @@ func (key JSONValue) Boolean() bool {
 
 //Checks if the type of the json value is an object and if appropriate, casts it into a map of JSONValue.
 func (key JSONValue) Object() map[string]JSONValue {
-  switch typedValue := key.value.(type) {
+  switch typedValue := key.Value.(type) {
     case map[string]interface{}:
       return convertMap(typedValue)
     default:
@@ -142,9 +142,9 @@ func applyDefaults(config, defaults map[string]JSONValue) {
     if _, exists := config[key]; !exists {
       config[key] = value
     } else {
-      switch value.value.(type) {
+      switch value.Value.(type) {
         case map[string]interface{}:
-          switch config[key].value.(type) {
+          switch config[key].Value.(type) {
             case map[string]interface{}:
               applyDefaults(config[key].Obj, defaults[key].Obj)
           }
