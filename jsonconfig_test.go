@@ -7,7 +7,7 @@ import (
 )
 
 func TestLoadAbstract(test *testing.T) {
-  config, err := jsonconfig.LoadAbstract("./TestConfig.json", `
+  config, err := jsonconfig.LoadAbstract("./configs/TestConfig.conf", `
   {
     "test_string": "try to overwrite",
     "test_array": [
@@ -82,7 +82,7 @@ func TestLoadAbstract(test *testing.T) {
 
 func ExampleLoadAbstract() {
   /*
-  ./ExampleConfig.json is
+  ./configs/ExampleConfig.conf is
   {
     "example_string": "string value",
     "example_array": [
@@ -93,7 +93,7 @@ func ExampleLoadAbstract() {
     }
   }
   */
-  config, err := jsonconfig.LoadAbstract("./ExampleConfig.json", `{"example_default": 4}`)
+  config, err := jsonconfig.LoadAbstract("./configs/ExampleConfig.conf", `{"example_default": 4}`)
 
   if err != nil {
     return
@@ -110,6 +110,195 @@ func ExampleLoadAbstract() {
   // example_default: 4
 }
 
+func ExampleLoadAbstract_defaults() {
+  /*
+  ./configs/ExampleConfig.conf is
+  {
+    "example_string": "string value",
+    "example_array": [
+      "array value 0"
+    ],
+    "example_object": {
+      "example_number": 5.3
+    }
+  }
+  */
+  config, err := jsonconfig.LoadAbstract("./configs/ExampleConfig.conf", `{
+      "example_default": 4,
+      "example_string": "only a default",
+      "example_array": [
+        "arrays",
+        "don't",
+        "get",
+        "merged"
+      ],
+      "example_object": {
+        "example_merge": "objects get merged",
+        "example_number": 6
+      }
+}`)
+
+  if err != nil {
+    fmt.Println(err)
+    return
+  }
+
+  fmt.Println("example_default:", config["example_default"].Int)
+  fmt.Println("example_string:", config["example_string"].Str)
+  fmt.Println("length of example_array:", len(config["example_array"].Arr))
+  fmt.Println("example_array:", config["example_array"].Arr[0].Str)
+  fmt.Println("example_object:", config["example_object"].Obj["example_merge"].Str)
+  fmt.Println("example_object:", config["example_object"].Obj["example_number"].Num)
+
+  // Output: example_default: 4
+  // example_string: string value
+  // length of example_array: 1
+  // example_array: array value 0
+  // example_object: objects get merged
+  // example_object: 5.3
+}
+
+func ExampleLoadAbstract_complex() {
+  /*
+  ./configs/ExampleComplexConfig.conf is
+  {
+    "example_object": {
+      "that": {
+        "goes": {
+          "quite": "deep"
+        }
+      },
+      "you ofcourse": "don't have to use all the depth"
+    },
+    "example_object.you ofcourse": "but collisions can be a pain"
+  }
+  */
+  config, err := jsonconfig.LoadAbstract("./configs/ExampleComplexConfig.conf", "")
+
+  if err != nil {
+    fmt.Println(err)
+    return
+  }
+
+  fmt.Println(config["example_object.that.goes.quite"].Str)
+  fmt.Println(config["example_object.that.doesn't.care.how.deep.you.go.even.if.it's.invalid"].Str)
+  fmt.Println(config["example_object.you ofcourse"].Str)
+  fmt.Println(config["example_object"].Obj["you ofcourse"].Str)
+
+  // Output: deep
+  //
+  // but collisions can be a pain
+  // don't have to use all the depth
+}
+
+func ExampleLoadAbstract_arrays() {
+  /*
+  ./configs/ExampleArrayConfig.conf is
+  {
+    "example_array": [
+      "array value 0",
+      "array value 1",
+      {
+        "handles": "objects"
+      },
+      "array value 3"
+    ]
+  }
+  */
+  config, err := jsonconfig.LoadAbstract("./configs/ExampleArrayConfig.conf", "")
+
+  if err != nil {
+    fmt.Println(err)
+    return
+  }
+
+  fmt.Println("example_array.0:", config["example_array.0"].Str)
+  fmt.Println("example_array.1:", config["example_array.1"].Str)
+  fmt.Println("example_array.2:", config["example_array.2"].Obj["handles.objects"].Str)
+  fmt.Println("example_array.2.handles.objects:", config["example_array.2.handles.objects"].Str)
+  fmt.Println("example_array.3:", config["example_array.3"].Str)
+
+  fmt.Println("The array value that is an object wont be printed because it isn't a string")
+  for _, value := range config["example_array"].Arr {
+    fmt.Println(value.Str)
+  }
+
+  // Output: example_array.0: array value 0
+  // example_array.1: array value 1
+  // example_array.2: even when split
+  // example_array.2.handles.objects: even when split
+  // example_array.3: array value 3
+  // The array value that is an object wont be printed because it isn't a string
+  // array value 0
+  // array value 1
+  //
+  // array value 3
+}
+
+func ExampleConfiguration_MergeConfig() {
+  /*
+  ./configs/ExampleConfig1.conf is
+  {
+    "from one": 1,
+    "collision": "one",
+    "object collision": {
+      "from one": 1,
+      "collision": "one",
+    },
+    "array collision": [
+      "one"
+    ]
+  }
+
+  ./configs/ExampleConfig2.conf is
+  {
+    "from two": 2,
+    "collision": "two",
+    "object collision": {
+      "from two": 2,
+      "collision": "two",
+    },
+    "array collision": [
+      "two",
+      "three"
+    ]
+  }
+  */
+  config, err := jsonconfig.LoadAbstract("./configs/ExampleConfig1.conf", "")
+
+  if err != nil {
+    fmt.Println(err)
+    return
+  }
+
+  config2, err := jsonconfig.LoadAbstract("./configs/ExampleConfig2.conf", "")
+
+  if err != nil {
+    fmt.Println(err)
+    return
+  }
+
+  config.MergeConfig(config2)
+
+  fmt.Println("from one:", config["from one"].Num)
+  fmt.Println("from two:", config["from two"].Num)
+  fmt.Println("collision:", config["collision"].Str)
+  fmt.Println("object collision.from one:", config["object collision.from one"].Num)
+  fmt.Println("object collision.from two:", config["object collision.from two"].Num)
+  fmt.Println("object collision.collision:",config["object collision.collision"].Str)
+  fmt.Println("length of array collision:", len(config["array collision"].Arr))
+  fmt.Println("array collision.0:", config["array collision.0"].Str)
+
+  // Output: from one: 1
+  // from two: 2
+  // collision: one
+  // object collision.from one: 1
+  // object collision.from two: 2
+  // object collision.collision: one
+  // length of array collision: 1
+  // array collision.0: one
+}
+
 type exampleObject struct {
   Example_number float64
 }
@@ -123,7 +312,7 @@ type configuration struct {
 
 func ExampleLoad() {
   /*
-  ./ExampleConfig.json is
+  ./configs/ExampleConfig.conf is
   {
     "example_string": "string value",
     "example_array": [
@@ -135,7 +324,7 @@ func ExampleLoad() {
   }
   */
   config := configuration{Example_default: 4}
-  err := jsonconfig.Load("./ExampleConfig.json", &config)
+  err := jsonconfig.Load("./configs/ExampleConfig.conf", &config)
 
   if err != nil {
     return

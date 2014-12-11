@@ -2,6 +2,8 @@
 
 This package provides a convenient mechanism for using a json structure as a configuration file with the added benefit of allowing //comments.
 
+## [GoDoc](http://godoc.org/github.com/callum-ramage/jsonconfig) ##
+
 ##Installation and Usage##
 
 To install simply call
@@ -18,7 +20,7 @@ Usage of the package couldn't be simpler
 	)
 
 	func main() {
-		config, err := jsonconfig.LoadAbstract("./ExampleConfig.json", "")
+		config, err := jsonconfig.LoadAbstract("./ExampleConfig.conf", "")
 
 		if err != nil {
 			return
@@ -28,6 +30,11 @@ Usage of the package couldn't be simpler
 		fmt.Println(config["example_array"].Arr[0].Str)
 		fmt.Println(config["example_object"].Obj["example_number"].Num)
 		fmt.Println(config["example_object"].Obj["example_number"].Int)
+		//Or
+		fmt.Println(config["example_string"].Str)
+		fmt.Println(config["example_array.0"].Str)
+		fmt.Println(config["example_object.example_number"].Num)
+		fmt.Println(config["example_object.example_number"].Int)
 	}
 
 Outputs
@@ -37,7 +44,7 @@ Outputs
 	5.3
 	5
 
-Where `./ExampleConfig.json` is
+Where `./ExampleConfig.conf` is
 
 	{
 		"example_string": "string value",
@@ -49,4 +56,4 @@ Where `./ExampleConfig.json` is
 		}
 	}
 
-For a more detailed example that includes defining default values, have a look at [jsonconfig_test.go](jsonconfig_test.go)
+For a more detailed example that includes defining default values, have a look at [jsonconfig_test.go](jsonconfig_test.go) or the [GoDoc](http://godoc.org/github.com/callum-ramage/jsonconfig)

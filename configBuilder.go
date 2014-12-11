@@ -1,10 +1,16 @@
+//jsonconfig contains a set of useful structures for accessing json data from a
+//configuration file. It uses a pre-processor that removes //comments from the file
+//before parsing it.
 package jsonconfig
 
 import (
   "encoding/json"
   "os"
   "strings"
+  "strconv"
 )
+
+type Configuration map[string]JSONValue
 
 //Is a convenience struct that makes working with abstract JSON data more tolerable.
 //The internal values Arr and Obj can be nil, so should not be assumed to be safe.
@@ -15,7 +21,7 @@ type JSONValue struct{
   Int int
   Num float64
   Bool bool
-  Obj map[string]JSONValue
+  Obj Configuration
 }
 
 //Creates a JSONValue from the interface provided. It attempts to fill the values Arr, Str, Int, Num, and Obj
@@ -87,18 +93,73 @@ func (key JSONValue) Boolean() bool {
 }
 
 //Checks if the type of the json value is an object and if appropriate, casts it into a map of JSONValue.
-func (key JSONValue) Object() map[string]JSONValue {
+func (key JSONValue) Object() Configuration {
   switch typedValue := key.Value.(type) {
     case map[string]interface{}:
       return convertMap(typedValue)
     default:
-      return nil
+      return Configuration{}
+  }
+}
+
+//Facilitates the collapse of a configuration (map[string]JSONValue) so that you can access sub
+//levels with a "." delimeter. This function wont overwrite any keys that already exist, so if
+//you have a structure of the form
+//  {
+//    "example": {
+//      "collision": "ignored"
+//    },
+//    "example.collision": "used"
+//  }
+//The value "used" will be returned by config["example.collision"].
+func (key JSONValue) collapse(path string, config Configuration) {
+  if _, exists := config[path]; !exists {
+    config[path] = key
+  }
+  for childKey, childValue := range key.Obj {
+    childValue.collapse(childKey, key.Obj)
+    childValue.collapse(path + "." + childKey, config)
+  }
+  for childKey, childValue := range key.Arr {
+    childValue.collapse(path + "." + strconv.Itoa(childKey), config)
+  }
+}
+
+/*
+//Commented out to define a convention for how this package should be used
+//Takes a "." delimited path and recursively uses the
+func (config Configuration) Get(path string) JSONValue {
+  if value, ok := config[path]; ok {
+    return value
+  } else {
+    keys := strings.Split(path, ".")
+    if subPath, subPathOk := config.Get(strings.Join(keys[0:len(keys) - 1], ".")).Obj[keys[len(keys) - 1]]; subPathOk {
+      return subPath
+    } else {
+      return NewJSONValue(nil)
+    }
+  }
+}
+*/
+
+//Flattens a configuration (map[string]JSONValue) so that you can access sub levels with a "." delimeter.
+//This function wont overwrite any keys that already exist, so if you have a structure of the form
+//  {
+//    "example": {
+//      "collision": "ignored"
+//    },
+//    "example.collision": "used"
+//  }
+//The value "used" will be returned by config["example.collision"].
+func (config Configuration) Collapse() {
+  for childKey, childValue := range config {
+    childValue.collapse(childKey, config)
   }
 }
 
 //Converts an abstract map of json data into a map of JSONValue.
-func convertMap(from map[string]interface{}) map[string]JSONValue {
-  output := map[string]JSONValue{}
+func convertMap(from map[string]interface{}) Configuration {
+  output := Configuration{}
   for mapKey, mapValue := range from {
     output[mapKey] = NewJSONValue(mapValue)
   }
@@ -106,39 +167,39 @@ func convertMap(from map[string]interface{}) map[string]JSONValue {
 }
 
 //Attempts to parse the file as a json object, removing any //comments in the process.
-func loadFileAsJSON(filename string) (map[string]JSONValue, error) {
+func loadFileAsJSON(filename string) (Configuration, error) {
   file, err := os.Open(filename)
   if err != nil {
-    return map[string]JSONValue{}, err
+    return Configuration{}, err
   }
 
   untypedMap := map[string]interface{}{}
   dec := json.NewDecoder(NewJsonCommentStripper(file))
   if err = dec.Decode(&untypedMap); err != nil {
-    return map[string]JSONValue{}, err
+    return Configuration{}, err
   }
 
   return convertMap(untypedMap), nil
 }
 
 //Attempts to parse the string as a json object, removing any //comments in the process.
-func loadStringAsJSON(jsonstr string) (map[string]JSONValue, error) {
+func loadStringAsJSON(jsonstr string) (Configuration, error) {
   untypedMap := map[string]interface{}{}
   dec := json.NewDecoder(NewJsonCommentStripper(strings.NewReader(jsonstr)))
   if err := dec.Decode(&untypedMap); err != nil {
-    return map[string]JSONValue{}, err
+    return Configuration{}, err
   }
 
   return convertMap(untypedMap), nil
 }
 
-//Carefully copies default values into the loaded config file.
-//If the key already exists in the loaded config file then the one in the default config
-//is ignored unless the value in both the default config and the loaded config is an object.
+//Carefully copies the other Configurations values into the calling config file.
+//If the key already exists in the calling config file then the one in the other config
+//is ignored unless the value in the other config and the calling config are both objects.
 //If the value is an object then the process is repeated, treating this key as a config in both
-//the loaded config and default config.
-func applyDefaults(config, defaults map[string]JSONValue) {
-  for key, value := range defaults {
+//the calling config and other config.
+func (config Configuration) MergeConfig(other Configuration) {
+  for key, value := range other {
     if _, exists := config[key]; !exists {
       config[key] = value
     } else {
@@ -146,17 +207,18 @@ func applyDefaults(config, defaults map[string]JSONValue) {
         case map[string]interface{}:
           switch config[key].Value.(type) {
             case map[string]interface{}:
-              applyDefaults(config[key].Obj, defaults[key].Obj)
+              config[key].Obj.MergeConfig(other[key].Obj)
           }
       }
     }
   }
+  config.Collapse()
 }
 
 //Loads the file containing a json object into an abstract map of JSONValue valueType.
 //You can provide a default configuration by providing a partial example of the config
 //file as a string.
-func LoadAbstract(filename string, defaults string) (config map[string]JSONValue, err error) {
+func LoadAbstract(filename string, defaults string) (config Configuration, err error) {
   config, err = loadFileAsJSON(filename)
   if err != nil {
     return
@@ -165,10 +227,11 @@ func LoadAbstract(filename string, defaults string) (config map[string]JSONValue
   if len(defaults) > 0 {
     defaultValues, err := loadStringAsJSON(defaults)
     if err != nil {
-      return map[string]JSONValue{}, err
+      return Configuration{}, err
     }
-    applyDefaults(config, defaultValues)
+    config.MergeConfig(defaultValues)
   }
+  config.Collapse()
   return
 }
 
