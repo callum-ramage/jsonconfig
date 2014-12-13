@@ -6,6 +6,45 @@ import (
   "testing"
 )
 
+func TestLoadAbstractNoCollapse(test *testing.T) {
+  config, err := jsonconfig.LoadAbstractNoCollapse("./configs/TestConfig.conf", "")
+
+  if err != nil {
+    test.Error()
+    return
+  }
+
+  if config["test_string"].Str != "string value" {
+    fmt.Println(config["test_string"].Str)
+    test.Error()
+  }
+
+  if config["test_array.0"].Str == "array value 0" {
+    fmt.Println(config["test_array.0"].Str)
+    test.Error()
+  }
+
+  if config.Get("test_array.0").Str == "array value 0" {
+    fmt.Println(config.Get("test_array.0").Str)
+    test.Error()
+  }
+
+  if config["test_array"].Arr[0].Str != "array value 0" {
+    fmt.Println(config["test_array"].Arr[0].Str)
+    test.Error()
+  }
+
+  if config.Get("test_string").Str != "string value" {
+    fmt.Println(config.Get("test_string").Str)
+    test.Error()
+  }
+
+  if config.Get("test_object.test_string").Str != "wont be over written" {
+    fmt.Println(config.Get("test_object.test_string").Str)
+    test.Error()
+  }
+}
+
 func TestLoadAbstract(test *testing.T) {
   config, err := jsonconfig.LoadAbstract("./configs/TestConfig.conf", `
   {
@@ -23,6 +62,7 @@ func TestLoadAbstract(test *testing.T) {
     "test_default": "works"
   }
   `)
+
   if err != nil {
     test.Error()
     return
@@ -40,6 +80,21 @@ func TestLoadAbstract(test *testing.T) {
 
   if config["test_array"].Arr[0].Str != "array value 0" {
     fmt.Println(config["test_array"].Arr[0].Str)
+    test.Error()
+  }
+
+  if config["test_array"].Arr[1].Obj["array value"].Num != 1 {
+    fmt.Println(config["test_array"].Arr[1].Obj["array value"].Num)
+    test.Error()
+  }
+
+  if config["test_array.0"].Str != "array value 0" {
+    fmt.Println(config["test_array.0"].Str)
+    test.Error()
+  }
+
+  if config["test_array.1.array value"].Num != 1 {
+    fmt.Println(config["test_array.1.array value"].Num)
     test.Error()
   }
 
@@ -61,6 +116,11 @@ func TestLoadAbstract(test *testing.T) {
 
   if config["test_object"].Obj["test_object"].Obj["even_deeper"].Str != "works" {
     fmt.Println(config["test_object"].Obj["test_object"].Obj["even_deeper"].Str)
+    test.Error()
+  }
+
+  if config["test_object.test_object.even_deeper"].Str != "works" {
+    fmt.Println(config["test_object.test_object.even_deeper"].Str)
     test.Error()
   }
 

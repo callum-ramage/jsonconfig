@@ -1,6 +1,50 @@
 //jsonconfig contains a set of useful structures for accessing json data from a
 //configuration file. It uses a pre-processor that removes //comments from the file
 //before parsing it.
+//
+//  package main
+//
+//  import (
+//    "github.com/callum-ramage/jsonconfig"
+//    "fmt"
+//  )
+//
+//  func main() {
+//    config, err := jsonconfig.LoadAbstract("./configs/ExampleConfig.conf", "")
+//
+//    if err != nil {
+//      return
+//    }
+//
+//    fmt.Println(config["example_string"].Str)
+//    fmt.Println(config["example_array"].Arr[0].Str)
+//    fmt.Println(config["example_object"].Obj["example_number"].Num)
+//    fmt.Println(config["example_object"].Obj["example_number"].Int)
+//    //Or
+//    fmt.Println(config["example_string"].Str)
+//    fmt.Println(config["example_array.0"].Str)
+//    fmt.Println(config["example_object.example_number"].Num)
+//    fmt.Println(config["example_object.example_number"].Int)
+//  }
+//
+//Outputs
+//
+//  string value
+//  array value 0
+//  5.3
+//  5
+//
+//Where ./configs/ExampleConfig.conf is
+//
+//  {
+//    "example_string": "string value",
+//    "example_array": [
+//      "array value 0"
+//    ],
+//    "example_object": {
+//      "example_number": 5.3
+//    }
+//  }
 package jsonconfig
 
 import (
@@ -125,23 +169,6 @@ func (key JSONValue) collapse(path string, config Configuration) {
   }
 }
 
-/*
-//Commented out to define a convention for how this package should be used
-//Takes a "." delimited path and recursively uses the
-func (config Configuration) Get(path string) JSONValue {
-  if value, ok := config[path]; ok {
-    return value
-  } else {
-    keys := strings.Split(path, ".")
-    if subPath, subPathOk := config.Get(strings.Join(keys[0:len(keys) - 1], ".")).Obj[keys[len(keys) - 1]]; subPathOk {
-      return subPath
-    } else {
-      return NewJSONValue(nil)
-    }
-  }
-}
-*/
-
 //Flattens a configuration (map[string]JSONValue) so that you can access sub levels with a "." delimeter.
 //This function wont overwrite any keys that already exist, so if you have a structure of the form
 //  {
@@ -154,6 +181,42 @@ func (config Configuration) Get(path string) JSONValue {
 func (config Configuration) Collapse() {
   for childKey, childValue := range config {
     childValue.collapse(childKey, config)
+  }
+}
+
+//Takes a "." delimited path and recursively uses the path, returning when a matching structure is found.
+//So this func will return used in the following example because example.collision gets matched before
+//example: { collision }.
+//  {
+//    "example": {
+//      "collision": "ignored"
+//    },
+//    "example.collision": "used"
+//  }
+//This func is only available because a collapsed config pollutes the parent nodes, stopping you from using
+//  for key, value := range config {
+//    fmt.Println(key)
+//  }
+//This func also can't handle arrays so for the following config
+//  {
+//    "array": [
+//      {
+//        "value": 4
+//      }
+//    ]
+//  }
+//config.Get("array.0.value").Num will return nothing while a collapsed config config["array.0.value"].Num
+//would return 4.
+func (config Configuration) Get(path string) JSONValue {
+  if value, ok := config[path]; ok {
+    return value
+  } else {
+    keys := strings.Split(path, ".")
+    if subPath, subPathOk := config.Get(strings.Join(keys[0:len(keys) - 1], ".")).Obj[keys[len(keys) - 1]]; subPathOk {
+      return subPath
+    } else {
+      return NewJSONValue(nil)
+    }
   }
 }
 
@@ -212,13 +275,14 @@ func (config Configuration) MergeConfig(other Configuration) {
       }
     }
   }
-  config.Collapse()
+  // config.Collapse()
 }
 
 //Loads the file containing a json object into an abstract map of JSONValue valueType.
 //You can provide a default configuration by providing a partial example of the config
-//file as a string.
-func LoadAbstract(filename string, defaults string) (config Configuration, err error) {
+//file as a string. This call should be used over LoadAbstract if you wish to use range
+//on a JSON object. The collapse performed by LoadAbstract pollutes the keys of parent objects.
+func LoadAbstractNoCollapse(filename string, defaults string) (config Configuration, err error) {
   config, err = loadFileAsJSON(filename)
   if err != nil {
     return
@@ -231,6 +295,14 @@ func LoadAbstract(filename string, defaults string) (config Configuration, err e
     }
     config.MergeConfig(defaultValues)
   }
+  return
+}
+
+//Loads the file containing a json object into an abstract map of JSONValue valueType.
+//You can provide a default configuration by providing a partial example of the config
+//file as a string.
+func LoadAbstract(filename string, defaults string) (config Configuration, err error) {
+  config, err = LoadAbstractNoCollapse(filename, defaults)
   config.Collapse()
   return
 }

@@ -20,7 +20,7 @@ Usage of the package couldn't be simpler
 	)
 
 	func main() {
-		config, err := jsonconfig.LoadAbstract("./ExampleConfig.conf", "")
+		config, err := jsonconfig.LoadAbstract("./configs/ExampleConfig.conf", "")
 
 		if err != nil {
 			return
@@ -44,7 +44,7 @@ Outputs
 	5.3
 	5
 
-Where `./ExampleConfig.conf` is
+Where `./configs/ExampleConfig.conf` is
 
 	{
 		"example_string": "string value",
