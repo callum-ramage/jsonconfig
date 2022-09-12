@@ -1,10 +1,10 @@
-#jsonconfig#
+# jsonconfig #
 
 This package provides a convenient mechanism for using a json structure as a configuration file with the added benefit of allowing //comments.
 
 ## [GoDoc](http://godoc.org/github.com/callum-ramage/jsonconfig) ##
 
-##Installation and Usage##
+## Installation and Usage ##
 
 To install simply call
 
