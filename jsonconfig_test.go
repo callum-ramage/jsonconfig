@@ -2,8 +2,9 @@ package jsonconfig_test
 
 import (
 	"fmt"
-	"github.com/callum-ramage/jsonconfig"
 	"testing"
+
+	"github.com/callum-ramage/jsonconfig"
 )
 
 func TestLoadAbstractNoCollapse(test *testing.T) {
@@ -26,6 +27,16 @@ func TestLoadAbstractNoCollapse(test *testing.T) {
 
 	if config.Get("test_array.0").Str == "array value 0" {
 		fmt.Println(config.Get("test_array.0").Str)
+		test.Error()
+	}
+
+	if config.Get("test_inf_recursion").Str != "" {
+		fmt.Println(config.Get("test_inf_recursion").Str)
+		test.Error()
+	}
+
+	if config.Get("test_inf_recursion.with_dot").Str != "" {
+		fmt.Println(config.Get("test_inf_recursion.with_dot").Str)
 		test.Error()
 	}
 
