@@ -111,6 +111,8 @@ func (key JSONValue) Integer() int {
 	switch typedValue := key.Value.(type) {
 	case float64:
 		return int(typedValue)
+	case int:
+		return typedValue
 	default:
 		return 0
 	}
@@ -140,7 +142,7 @@ func (key JSONValue) Boolean() bool {
 func (key JSONValue) Object() Configuration {
 	switch typedValue := key.Value.(type) {
 	case map[string]interface{}:
-		return convertMap(typedValue)
+		return ConvertMap(typedValue)
 	default:
 		return Configuration{}
 	}
@@ -235,7 +237,7 @@ func (config Configuration) Get(path string) JSONValue {
 }
 
 // Converts an abstract map of JSON data into a map of JSONValue.
-func convertMap(from map[string]interface{}) Configuration {
+func ConvertMap(from map[string]interface{}) Configuration {
 	output := Configuration{}
 	for mapKey, mapValue := range from {
 		output[mapKey] = NewJSONValue(mapValue)
@@ -256,7 +258,7 @@ func loadFileAsJSON(filename string) (Configuration, error) {
 		return Configuration{}, err
 	}
 
-	return convertMap(untypedMap), nil
+	return ConvertMap(untypedMap), nil
 }
 
 // Attempts to parse the string as a JSON object, removing any //comments in the process.
@@ -267,7 +269,7 @@ func loadStringAsJSON(jsonstr string) (Configuration, error) {
 		return Configuration{}, err
 	}
 
-	return convertMap(untypedMap), nil
+	return ConvertMap(untypedMap), nil
 }
 
 // Carefully copies the other Configurations values into the calling config file.
