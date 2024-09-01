@@ -4,7 +4,7 @@ import (
 	"io"
 )
 
-//Outputs json with //comments removed.
+// Outputs json with //comments removed.
 type JsonCommentStripper struct {
 	R                 io.Reader
 	b                 []byte
@@ -16,15 +16,15 @@ type JsonCommentStripper struct {
 	more              bool
 }
 
-//Creates a new comment stripper that can be used as an intermediate layer between
-//a JSON decoder and a json source reader.
+// Creates a new comment stripper that can be used as an intermediate layer between
+// a JSON decoder and a json source reader.
 func NewJsonCommentStripper(reader io.Reader) *JsonCommentStripper {
 	commentStripper := JsonCommentStripper{reader, make([]byte, 10000), 0, 0, nil, false, 0, true}
 	commentStripper.fillBuffer()
 	return &commentStripper
 }
 
-//Refills the internal buffer from the internal reader.
+// Refills the internal buffer from the internal reader.
 func (j *JsonCommentStripper) fillBuffer() {
 	end, err := j.R.Read(j.b)
 	j.end = end
@@ -37,7 +37,7 @@ func (j *JsonCommentStripper) fillBuffer() {
 	}
 }
 
-//Reads data from the internal reader, removing //comments as it goes.
+// Reads data from the internal reader, removing //comments as it goes.
 func (j *JsonCommentStripper) Read(p []byte) (n int, err error) {
 	// Track strings and // comments
 	// A comment can't occur within a string
@@ -54,7 +54,7 @@ func (j *JsonCommentStripper) Read(p []byte) (n int, err error) {
 	for i := j.pos; i <= j.end && cap(p) >= (i-start) && !commentFound; i++ {
 		end = i
 		if i != j.end {
-			if j.b[i] == '"' {
+			if j.b[i] == '"' && previousCharacter != '\\' {
 				j.withinString = !j.withinString
 			}
 			if !j.withinString && j.b[i] == '/' && previousCharacter == '/' {

@@ -54,6 +54,11 @@ func TestLoadAbstractNoCollapse(test *testing.T) {
 		fmt.Println(config.Get("test_object.test_string").Str)
 		test.Error()
 	}
+
+	if config.Get("escaped_quote").Str != "tes\"//t" {
+		fmt.Println(config.Get("escaped_quote").Str)
+		test.Error()
+	}
 }
 
 func TestLoadAbstract(test *testing.T) {
@@ -147,6 +152,11 @@ func TestLoadAbstract(test *testing.T) {
 
 	if config["test_default"].Str != "works" {
 		fmt.Println(config["test_default"].Str)
+		test.Error()
+	}
+
+	if config.Get("escaped_quote").Str != "tes\"//t" {
+		fmt.Println(config.Get("escaped_quote").Str)
 		test.Error()
 	}
 }
