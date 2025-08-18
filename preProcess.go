@@ -26,6 +26,7 @@ func NewJsonCommentStripper(reader io.Reader) *JsonCommentStripper {
 
 // Refills the internal buffer from the internal reader.
 func (j *JsonCommentStripper) fillBuffer() {
+	// j.b = make([]byte, 10000)
 	end, err := j.R.Read(j.b)
 	j.end = end
 	j.pos = 0
@@ -42,7 +43,7 @@ func (j *JsonCommentStripper) Read(p []byte) (n int, err error) {
 	// Track strings and // comments
 	// A comment can't occur within a string
 	// Nothing can happen after a comment
-	if j.pos == j.end && (j.more || j.err == nil) {
+	if j.pos >= j.end && (j.more || j.err == nil) {
 		j.fillBuffer()
 	}
 
@@ -51,7 +52,7 @@ func (j *JsonCommentStripper) Read(p []byte) (n int, err error) {
 	start := j.pos
 	end := j.pos
 
-	for i := j.pos; i <= j.end && cap(p) >= (i-start) && !commentFound; i++ {
+	for i := j.pos; i <= j.end && cap(p) > (i-start) && !commentFound; i++ {
 		end = i
 		if i != j.end {
 			if j.b[i] == '"' && previousCharacter != '\\' {
@@ -64,11 +65,12 @@ func (j *JsonCommentStripper) Read(p []byte) (n int, err error) {
 		}
 	}
 
+	end++
 	j.pos = end
 	j.previousCharacter = previousCharacter
 
 	if commentFound {
-		end--
+		end -= 2
 	}
 
 	copy(p, j.b[start:end])
@@ -80,7 +82,7 @@ func (j *JsonCommentStripper) Read(p []byte) (n int, err error) {
 
 	// Advance to the end of the comment in preparation for the next read
 	if commentFound {
-		for i := end; commentFound; {
+		for i := j.pos; commentFound; {
 			if i == j.end {
 				if j.more {
 					j.fillBuffer()

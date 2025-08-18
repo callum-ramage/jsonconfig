@@ -2,6 +2,9 @@ package jsonconfig_test
 
 import (
 	"fmt"
+	"io"
+	"os"
+	"strings"
 	"testing"
 
 	"github.com/callum-ramage/jsonconfig"
@@ -231,6 +234,26 @@ func TestLoadString(test *testing.T) {
 	if config.Get("test_object.test_string").Str != "wont be over written" {
 		fmt.Println(config.Get("test_object.test_string").Str)
 		test.Error()
+	}
+}
+
+func TestCommentStripper(test *testing.T) {
+	file, err := os.Open("./configs/TestQuoteOnBufferCap.conf")
+	if err != nil {
+		test.Error()
+		return
+	}
+
+	dec := jsonconfig.NewJsonCommentStripper(file)
+	// Probably should use a fixed sized buffer instead of relying on io.ReadAll to remain fixed
+	bytes, err := io.ReadAll(dec)
+	if err != nil {
+		test.Error()
+		return
+	}
+	if strings.Contains(string(bytes), "//") {
+		test.Error()
+		return
 	}
 }
 
